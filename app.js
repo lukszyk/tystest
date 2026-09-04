@@ -81,9 +81,10 @@ const LEADER_CLASS = 'is-leader';
 let gameChart = null; 
 let finalChart = null;
 let gameChartVisible = false;
-let unsubscribeLiveSync = null; // Zmienna obsługująca nasłuchiwanie na żywo
+let unsubscribeLiveSync = null;
 
-// Funkcje zapisu/odczytu (localStorage, firebase)
+// --- Synchronizacja i Odczyt/Zapis (LocalStorage + Firebase) ---
+
 function saveGameStateToLocalStorage() { 
     if (gameState.isActive && gameState.players.length > 0) { 
         localStorage.setItem(GAME_STATE_KEY, JSON.stringify(gameState)); 
@@ -110,6 +111,31 @@ function tryToLoadGameFromLocalStorage() {
         } 
     } 
     return false; 
+}
+
+// Funkcja włączająca ciągłe nasłuchiwanie na żywo na dowolnym urządzeniu
+function enableLiveSync() {
+    if (!savedGameStateRef) return;
+    
+    if (unsubscribeLiveSync) {
+        unsubscribeLiveSync();
+    }
+
+    unsubscribeLiveSync = savedGameStateRef.onSnapshot((doc) => {
+        if (!doc.exists) return;
+
+        const remoteData = doc.data();
+        gameState = remoteData;
+        gameState.isActive = true;
+        gameState.loadedFromFirebase = true;
+
+        renderGameScreen(); 
+        saveGameStateToLocalStorage(); 
+        updateGameChart(); 
+        checkWinner();
+    }, (error) => {
+        console.error("Błąd synchronizacji na żywo:", error);
+    });
 }
 
 async function handleShowLoadScreen() { 
@@ -139,9 +165,9 @@ async function handleShowLoadScreen() {
     } 
 }
 
-// Automatyczny i ręczny zapis stanu gry w chmurze
+// Zapis stanu gry w chmurze (działa również przy pustej historii rund)
 async function saveCurrentGameState(showNotification = true) { 
-    if (!gameState.isActive || gameState.history.length === 0 || !savedGameStateRef) return; 
+    if (!gameState.isActive || !savedGameStateRef) return; 
     try { 
         await savedGameStateRef.set(gameState); 
         gameState.loadedFromFirebase = true; 
@@ -152,36 +178,12 @@ async function saveCurrentGameState(showNotification = true) {
     } 
 }
 
-// Wczytywanie z włączeniem nasłuchiwania na żywo (onSnapshot)
 function loadGameStateFromFirebase() { 
     if (!savedGameStateRef) return; 
-    
-    if (unsubscribeLiveSync) {
-        unsubscribeLiveSync();
-    }
-
-    unsubscribeLiveSync = savedGameStateRef.onSnapshot((doc) => {
-        if (doc.exists) {
-            const remoteData = doc.data();
-            gameState = remoteData;
-            gameState.isActive = true;
-            gameState.loadedFromFirebase = true;
-            
-            renderGameScreen(); 
-            loadGameScreen.classList.add('hidden'); 
-            setupScreen.classList.add('hidden'); 
-            gameScreen.classList.remove('hidden'); 
-            
-            saveGameStateToLocalStorage(); 
-            updateGameChart(); 
-            checkWinner();
-        } else {
-            console.log("Brak gry w chmurze.");
-        }
-    }, (error) => {
-        console.error("Błąd nasłuchiwania w czasie rzeczywistym:", error);
-        showCustomAlert('Wystąpił błąd synchronizacji na żywo.');
-    });
+    enableLiveSync();
+    loadGameScreen.classList.add('hidden'); 
+    setupScreen.classList.add('hidden'); 
+    gameScreen.classList.remove('hidden'); 
 }
 
 async function deleteSavedGameState() { 
@@ -213,7 +215,7 @@ async function handleDeleteSavedGame() {
     }); 
 }
 
-// --- Funkcje gry ---
+// --- Funkcje Logiki Gry ---
 
 function addRoundScore() {
     const filledInputsCount = scoreInputs.querySelectorAll('.input-filled').length;
@@ -265,7 +267,7 @@ function addRoundScore() {
     checkWinner(); 
     
     saveGameStateToLocalStorage();
-    saveCurrentGameState(false); // Automatyczny zapis w chmurze bez wyskakującego okienka
+    saveCurrentGameState(false);
 
     if(gameState.isActive) {
         gameState.players.forEach((_, i) => { 
@@ -307,7 +309,7 @@ async function saveAndEndGame() {
     saveAndEndBtn.disabled = true; 
     saveAndEndBtn.textContent = 'Zapisywanie...'; 
     await saveStats(gameWinnerData); 
-    await deleteSavedGameState(); // Usunięcie gry z chmury po zakończeniu
+    await deleteSavedGameState(); 
     resetGame(); 
     saveAndEndBtn.disabled = false; 
     saveAndEndBtn.textContent = 'Zapisz wynik i zakończ'; 
@@ -342,7 +344,7 @@ function clearGameState(fullClear = true) {
     if (chartToggleIcon) chartToggleIcon.textContent = '▼';
 }
 
-// --- Funkcje do rysowania wykresów ---
+// --- Rysowanie Wykresów ---
 
 function updateGameChart() {
     if (gameState.history.length === 0) {
@@ -438,7 +440,8 @@ function createChartConfig(canvasElement) {
     };
 }
 
-// Pozostałe funkcje pomocnicze
+// --- Funkcje Pomocnicze UI ---
+
 let messageTimeout; 
 function showTemporaryMessage(message, isError = false) { 
     statusMessageContainer.innerHTML = `<div class="p-2.5 rounded-xl ${isError ? 'bg-rose-950/90 text-rose-200 border border-rose-800/60' : 'bg-amber-950/90 text-amber-200 border border-amber-800/60'} text-xs font-semibold">${message}</div>`; 
@@ -505,7 +508,7 @@ function deleteRound(i) {
     updateGameChart(); 
     checkWinner(); 
     saveGameStateToLocalStorage(); 
-    saveCurrentGameState(false); // Zapis do chmury po cofnięciu rundy
+    saveCurrentGameState(false); // Zapis zmodyfikowanej historii do chmury
 }
 
 function handleInputKeydown(e) { 
@@ -580,7 +583,6 @@ function generatePlayerNameInputs() {
     } 
 }
 
-// Rozpoczęcie nowej gry z sprawdzaniem i ochroną przed nadpisaniem
 async function startGame() { 
     const players = []; 
     let hasValidNames = true; 
@@ -600,7 +602,6 @@ async function startGame() {
         return; 
     } 
 
-    // Sprawdzamy, czy w chmurze nie ma nieukończonej gry
     if (db && savedGameStateRef) {
         try {
             const docSnap = await savedGameStateRef.get();
@@ -619,9 +620,7 @@ async function startGame() {
                     );
                 });
 
-                if (!userAccepted) {
-                    return; // Anulujemy start nowej gry
-                }
+                if (!userAccepted) return;
             }
         } catch (e) {
             console.error("Błąd sprawdzania chmury przed nową grą:", e);
@@ -629,12 +628,16 @@ async function startGame() {
     }
 
     clearGameState(true); 
-    gameState = { players, history: [], isActive: true, firstPlayerIndex: 0, initialFirstPlayerIndex: 0, loadedFromFirebase: false }; 
+    gameState = { players, history: [], isActive: true, firstPlayerIndex: 0, initialFirstPlayerIndex: 0, loadedFromFirebase: true }; 
+    
     renderGameScreen(); 
     setupScreen.classList.add('hidden'); 
     statsScreen.classList.add('hidden'); 
     gameScreen.classList.remove('hidden'); 
+    
     saveGameStateToLocalStorage(); 
+    await saveCurrentGameState(false);
+    enableLiveSync(); // Aktywuje nasłuch na żywo od razu dla stwarzającego mecz
 }
 
 function checkWinner() { 
