@@ -1,0 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    background-color: #080e0d;
+    background-image: 
+        radial-gradient(at 50% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 75%),
+        radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.04) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: #ecfdf5;
+}
+
+.hidden { display: none !important; }
+
+/* Karty w stylu nowoczesnego stołu karcianego */
+.card {
+    background: rgba(18, 30, 27, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(45, 74, 66, 0.5);
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* Lider gry */
+.card.is-leader {
+    border-color: rgba(52, 211, 153, 0.5);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+/* Gracz na musiku */
+.card.is-musik {
+    background: linear-gradient(145deg, rgba(38, 30, 10, 0.9), rgba(22, 28, 25, 0.9));
+    border: 2px solid #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+}
+
+/* Przyciski dopasowane pod kciuk */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    min-height: 46px;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-align: center;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+    border: none;
+    letter-spacing: 0.01em;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn-primary { 
+    background: linear-gradient(135deg, #10b981, #059669); 
+    color: #ffffff; 
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+.btn-primary:hover { background: linear-gradient(135deg, #34d399, #10b981); }
+
+.btn-secondary { 
+    background-color: #1e332d; 
+    color: #a7f3d0; 
+    border: 1px solid #2d4a42;
+}
+.btn-secondary:hover { background-color: #26423a; }
+
+.btn-disabled {
+    background-color: #15221e;
+    color: #4b635a;
+    border-color: transparent;
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Pola wprowadzania danych (zapobieganie auto-zoom na telefonach) */
+.input-field {
+    width: 100%;
+    background-color: #0d1715;
+    border: 1.5px solid #2d4a42;
+    color: #f0fdf4;
+    padding: 0.625rem;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.25);
+    background-color: #12201d;
+}
+
+.input-field.input-filled {
+    border-color: #059669;
+    background-color: #0f241e;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* Tabela historii rund */
+#round-history-container table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+#round-history-container th, #round-history-container td { padding: 0.5rem 0.25rem; text-align: center; }
+#round-history-container th {
+    background-color: #13241f;
+    color: #6ee7b7;
+    font-weight: 700;
+    border-bottom: 2px solid #2d4a42;
+    position: sticky; top: 0; z-index: 10;
+}
+#round-history-container tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.02); }
+#round-history-container tr { border-bottom: 1px solid rgba(45, 74, 66, 0.3); }
+
+.history-score { font-weight: 700; color: #34d399; }
+.score-danger { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.3); }
+.score-negative { color: #f87171; font-weight: 600; }
+
+.app-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #1c332c;
+    font-size: 0.75rem;
+    color: #4b635a;
+}
+
+.chart-toggle {
+    background-color: #13241f;
+    color: #a7f3d0;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s ease-in-out;
+}
+.chart-toggle:hover { background-color: #1c332c; }
+
+/* Custom Scrollbar dla mobilnych */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #080e0d; }
+::-webkit-scrollbar-thumb { background: #2d4a42; border-radius: 4px; }
