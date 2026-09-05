@@ -602,6 +602,7 @@ async function startGame() {
         return; 
     } 
 
+    // Sprawdzanie czy gra istnieje w chmurze
     if (db && savedGameStateRef) {
         try {
             const docSnap = await savedGameStateRef.get();
@@ -610,23 +611,34 @@ async function startGame() {
                 const playersNames = data.players ? data.players.map(p => p.name).join(' vs ') : 'Nieznani';
                 const roundNum = data.history ? data.history.length + 1 : 1;
 
-                let userAccepted = false;
+                let shouldLoad = false;
+
+                // Zmiana napisów na przyciskach w oknie dialogowym
+                confirmYesBtn.textContent = 'Wczytaj grę';
+                confirmNoBtn.textContent = 'Anuluj';
+
                 await new Promise((resolve) => {
                     showCustomConfirm(
-                        `⚠️ Trwa już nieukończona gra w chmurze (${playersNames}, Runda ${roundNum})!\n\n` +
-                        `Kliknij 'Tak', aby skasować tamtą grę i zacząć nową.`,
-                        () => { userAccepted = true; resolve(); },
+                        `⚠️ W chmurze trwa już aktywna gra (${playersNames}, Runda ${roundNum})!\n\n` +
+                        `Nie można utworzyć nowej gry, dopóki obecna trwa. Czy chcesz do niej dołączyć?`,
+                        () => { shouldLoad = true; resolve(); },
                         true
                     );
                 });
 
-                if (!userAccepted) return;
+                if (shouldLoad) {
+                    loadGameStateFromFirebase();
+                }
+                
+                // Przerywamy tworzenie nowej gry – niezależnie od tego czy wczytano, czy anulowano
+                return;
             }
         } catch (e) {
             console.error("Błąd sprawdzania chmury przed nową grą:", e);
         }
     }
 
+    // Tworzenie nowej gry (wykonuje się TYLKO gdy chmura jest pusta)
     clearGameState(true); 
     gameState = { players, history: [], isActive: true, firstPlayerIndex: 0, initialFirstPlayerIndex: 0, loadedFromFirebase: true }; 
     
@@ -637,9 +649,8 @@ async function startGame() {
     
     saveGameStateToLocalStorage(); 
     await saveCurrentGameState(false);
-    enableLiveSync(); // Aktywuje nasłuch na żywo od razu dla stwarzającego mecz
+    enableLiveSync();
 }
-
 function checkWinner() { 
     if (!gameState.isActive) return; 
     const winners = gameState.players.filter(p => p.score >= 1000); 
