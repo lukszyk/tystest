@@ -91,6 +91,7 @@ function saveGameStateToLocalStorage() {
     } 
 }
 
+// 1. Poprawiona funkcja wczytywania z pamięci telefonu (automatycznie włącza sync)
 function tryToLoadGameFromLocalStorage() { 
     const savedStateJSON = localStorage.getItem(GAME_STATE_KEY); 
     if (savedStateJSON) { 
@@ -101,8 +102,14 @@ function tryToLoadGameFromLocalStorage() {
                 renderGameScreen(); 
                 setupScreen.classList.add('hidden'); 
                 gameScreen.classList.remove('hidden'); 
-                showTemporaryMessage('Wczytano ostatnią niezakończoną grę z pamięci lokalnej.', false); 
+                showTemporaryMessage('Wczytano aktywną grę.', false); 
                 updateGameChart(); 
+
+                // Jeśli gra była połączona z chmurą, natychmiast włączamy nasłuchiwanie na żywo
+                if (gameState.loadedFromFirebase) {
+                    enableLiveSync();
+                }
+
                 return true; 
             } 
         } catch (error) { 
@@ -112,6 +119,13 @@ function tryToLoadGameFromLocalStorage() {
     } 
     return false; 
 }
+
+// 2. Automatyczne odnawianie połączenia po wybudzeniu ekranu telefonu (dodaj na końcu app.js)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && gameState.isActive && gameState.loadedFromFirebase) {
+        enableLiveSync();
+    }
+});
 
 // Funkcja włączająca ciągłe nasłuchiwanie na żywo na dowolnym urządzeniu
 function enableLiveSync() {
